@@ -1,0 +1,245 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>留言</title>
+    <link rel="stylesheet" type="text/css"
+          href="{{url_for('static',filename='bootstrap-3.3.7-dist/css/bootstrap.css')}}">
+    <style>
+        .container {
+            width: 1000px;
+        }
+
+        .commentbox {
+            width: 900px;
+            margin: 20px auto;
+        }
+
+        .mytextarea {
+            width: 100%;
+            overflow: auto;
+            word-break: break-all;
+            height: 100px;
+            color: #000;
+            font-size: 1em;
+            resize: none;
+        }
+
+        .comment-list {
+            width: 900px;
+            margin: 20px auto;
+            clear: both;
+            padding-top: 20px;
+        }
+
+        .comment-list .comment-info {
+            position: relative;
+            margin-bottom: 20px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .comment-list .comment-info header {
+            width: 10%;
+            position: absolute;
+        }
+
+        .comment-list .comment-info header img {
+            width: 100%;
+            border-radius: 50%;
+            padding: 5px;
+        }
+
+        .comment-list .comment-info .comment-right {
+            padding: 5px 0px 5px 11%;
+        }
+
+        .comment-list .comment-info .comment-right h3 {
+            margin: 5px 0px;
+        }
+
+        .comment-list .comment-info .comment-right .comment-content-header {
+            height: 25px;
+        }
+
+        .comment-list .comment-info .comment-right .comment-content-header span, .comment-list .comment-info .comment-right .comment-content-footer span {
+            padding-right: 2em;
+            color: #aaa;
+        }
+
+        .comment-list .comment-info .comment-right .comment-content-header span, .comment-list .comment-info .comment-right .comment-content-footer span.reply-btn, .send, .reply-list-btn {
+            cursor: pointer;
+        }
+
+        .comment-list .comment-info .comment-right .reply-list {
+            border-left: 3px solid #ccc;
+            padding-left: 7px;
+        }
+
+        .comment-list .comment-info .comment-right .reply-list .reply {
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .comment-list .comment-info .comment-right .reply-list .reply div span {
+            padding-left: 10px;
+        }
+
+        .comment-list .comment-info .comment-right .reply-list .reply p span {
+            padding-right: 2em;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body style="">
+
+<div style="float: left">
+    <h3>
+        <span>浏览器标识：</span>
+        <br>
+        <span id="ID"></span>
+        <br>
+        {% if id %}
+        <span style="">用户id：<span id="uid">{{id}}</span>
+            </span>
+        {% endif %}
+    </h3>
+
+</div>
+<div class="container">
+
+    <div class="commentbox">
+        <textarea cols="80" rows="50" placeholder="来说几句吧......" class="mytextarea" id="content"></textarea>
+        <div class="btn btn-info pull-right" id="comment" onclick="submit_btn()">评论</div>
+    </div>
+    <div class="comment-list">
+        {% for massage in data %}
+        <div class="comment-info">
+            <div class="comment-right"><h3>用户名：{{massage.users.name}}</h3>
+                <div class="comment-content-header"><span><i
+                        class="glyphicon glyphicon-time"></i>{{massage.created_date}}</span></div>
+                <p class="content">{{massage.massage}}</p>
+
+                <div class="reply-list"></div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+
+    <div class="modal fade" tabindex="-1" role="dialog" id="details_modal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+
+                <div class="modal-body">
+
+                    <form class="popup" action="/validate" method="post" id="geetest">
+                        <div id="embed-captcha"></div>
+                        <p id="wait" class="show">正在加载验证码......</p>
+                        <p id="notice" class="hide">请先拖动验证码到相应位置</p>
+                        <br>
+                        <input type="text" id="hide_mesage" name="msg" style="display: none;">
+                        <input class="btn" id="embed-submit" type="submit" value="提交">
+                    </form>
+                </div>
+                <div class="modal-footer">
+
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+
+</div>
+
+<script src="{{url_for('static',filename='gt.js')}}"></script>
+<script src="{{url_for('static',filename='js/jquery-2.0.3.min.js')}}"></script>
+<script src="{{url_for('static',filename='bootstrap-3.3.7-dist/js/bootstrap.js')}}"></script>
+<script src="{{url_for('static',filename='fingerprint.js')}}"></script>
+<script>
+    var fingerprint = new Fingerprint().get();
+    $('#ID').text(fingerprint);
+
+    // console.log(fingerprint);
+
+    function details() {
+        $.get(function (data) {
+        }, "json");
+        $('#details_modal').modal('show');
+    }
+
+    function submit_btn() {
+        var content = $('#content').val();
+        var uid = $('#uid').text();
+        if (!uid){
+            location.href= '/login';
+        }
+
+        var formdata = new FormData();
+        formdata.append('content', content);
+        $.ajax({
+            type: "POST",
+            url: "/message/add",
+            data: formdata,
+            contentType: false, //不设置内容类型
+            processData: false, //不处理数据
+            dataType: "json",
+            success: function (data) {
+                console.log(data);
+                if (data.code == 10000) {
+                    //添加成功
+                    location.href = '/message';
+                    // console.log(data);
+                } else {
+                    //频繁操作
+                    // console.log(content);
+                    details();
+                    $('#hide_mesage').val(content)
+                }
+            }
+        })
+    }
+
+    var handlerEmbed = function (captchaObj) {
+        $("#embed-submit").click(function (e) {
+            var validate = captchaObj.getValidate();
+            if (!validate) {
+                $("#notice")[0].className = "show";
+                setTimeout(function () {
+                    $("#notice")[0].className = "hide";
+                }, 2000);
+                e.preventDefault();
+            }
+        });
+        // 将验证码加到id为captcha的元素里，同时会有三个input的值：geetest_challenge, geetest_validate, geetest_seccode
+        captchaObj.appendTo("#embed-captcha");
+        captchaObj.onReady(function () {
+            $("#wait")[0].className = "hide";
+        });
+        // 更多接口参考：http://www.geetest.com/install/sections/idx-client-sdk.html
+    };
+    $.ajax({
+        // 获取id，challenge，success（是否启用failback）
+        url: "/getcaptcha", // 加随机数防止缓存
+        type: "get",
+        dataType: "json",
+        success: function (data) {
+            console.log(11111, data);
+
+            // 使用initGeetest接口
+            // 参数1：配置参数
+            // 参数2：回调，回调的第一个参数验证码对象，之后可以使用它做appendTo之类的事件
+            initGeetest({
+                gt: data.gt,
+                challenge: data.challenge,
+                product: "embed", // 产品形式，包括：float，embed，popup。注意只对PC版验证码有效
+                offline: !data.success // 表示用户后台检测极验服务器是否宕机，一般不需要关注
+                // 更多配置参数请参见：http://www.geetest.com/install/sections/idx-client-sdk.html#config
+            }, handlerEmbed);
+
+
+        }
+    });
+</script>
+
+
+</body>
+</html>
